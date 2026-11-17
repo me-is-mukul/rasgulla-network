@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+
+{% block content %}
+    <div class="vault-container">
+        <h2>Recycle Bin</h2>
+        {% if entries %}
+            <table class="vault-table">
+                <thead>
+                    <tr>
+                        <th>Original Filename</th>
+                        <th>Backup Filename</th>
+                        <th>Date</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for entry in entries %}
+                        <tr>
+                            <td>{{ entry.original_filename }}</td>
+                            <td>{{ entry.backup_filename }}</td>
+                            <td>{{ entry.timestamp|localtime }}</td>
+
+                            <td>
+                                <form method="POST" action="{{ url_for('file.delete_recycle_entry', entry_id=entry.id) }}" style="display: inline;">
+                                    <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Are you sure you want to permanently delete this backup?')">Delete Permanently</button>
+                                </form>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        {% else %}
+            <p>No files in recycle bin.</p>
+        {% endif %}
+    </div>
+{% endblock %}

@@ -1,0 +1,32 @@
+# ---------- Python ----------
+__pycache__/
+*.py[cod]
+venv/
+.venv/
+env/
+venv_old_broken/
+
+# ---------- Secrets ----------
+.env
+
+# ---------- App data (database + user files) - never commit ----------
+instance/
+*.db
+logs/
+*.log
+
+uploads/*
+!uploads/.gitkeep
+encrypted_files/*
+!encrypted_files/.gitkeep
+recycle_bin/*
+!recycle_bin/.gitkeep
+received_files/*
+!received_files/.gitkeep
+
+# ---------- OS / editor ----------
+.DS_Store
+Thumbs.db
+desktop.ini
+.vscode/
+.idea/

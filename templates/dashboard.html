@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+
+{% block content %}
+    <div class="dashboard">
+        <h2>Welcome, {{ user.username }}!</h2>
+        <div class="dashboard-actions">
+            <a href="{{ url_for('file.encrypt_file_route') }}" class="btn btn-primary">Encrypt a File</a>
+            <a href="{{ url_for('file.my_vault') }}" class="btn btn-secondary">My Vault</a>
+            <a href="{{ url_for('file.decrypt_uploaded_file') }}" class="btn btn-secondary">Decrypt Uploaded File</a>
+            <a href="{{ url_for('text.encrypt_text_route') }}" class="btn btn-secondary">Encrypt Text</a>
+            {% if user.role == 'admin' %}
+                <a href="{{ url_for('admin.admin_panel') }}" class="btn btn-danger">Admin Panel</a>
+            {% endif %}
+        </div>
+    </div>
+{% endblock %}

@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+
+{% block content %}
+    <div class="hero">
+        <h1>SafeCipher 2.0</h1>
+        <p>Advanced File Security Suite</p>
+        <div class="cta-buttons">
+            {% if not current_user.is_authenticated %}
+                <a href="{{ url_for('auth.login') }}" class="btn btn-primary">Login</a>
+                <a href="{{ url_for('auth.register') }}" class="btn btn-secondary">Register</a>
+            {% else %}
+                <a href="{{ url_for('main.dashboard') }}" class="btn btn-primary">Go to Dashboard</a>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="features">
+        <div class="feature">
+            <h3>Secure Encryption</h3>
+            <p>Protect your files with AES-256 encryption, the industry standard for data security.</p>
+        </div>
+        <div class="feature">
+            <h3>Integrity Verification</h3>
+            <p>Ensure your files haven't been tampered with using SHA-256 hash verification.</p>
+        </div>
+        <div class="feature">
+            <h3>Steganography</h3>
+            <p>Hide your encrypted files within images for an extra layer of security.</p>
+        </div>
+        <div class="feature">
+            <h3>Multi-User Support</h3>
+            <p>Manage multiple user accounts with role-based access control.</p>
+        </div>
+    </div>
+{% endblock %}

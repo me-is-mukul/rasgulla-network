@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+
+{% block content %}
+    <div class="form-container">
+        <h2>Encrypt File</h2>
+        <form method="POST" action="{{ url_for('file.encrypt_file_route') }}" enctype="multipart/form-data">
+            <div class="form-group">
+                <label for="file">Select File</label>
+                <input type="file" id="file" name="file" required>
+            </div>
+            <div class="form-group">
+                <label for="password">Password</label>
+                <input type="password" id="password" name="password" required>
+            </div>
+            <div class="form-group">
+                <label>
+                    <input type="checkbox" name="stego_mode"> Steganography Mode (hide in image)
+                </label>
+            </div>
+            <div class="form-group" id="cover-image-group" style="display: none;">
+                <label for="cover_image">Cover Image</label>
+                <input type="file" id="cover_image" name="cover_image">
+            </div>
+            <div class="form-group">
+                <label for="unlock_time">Unlock Time (optional)</label>
+                <input type="datetime-local" id="unlock_time" name="unlock_time">
+            </div>
+
+            <!-- OTP REMOVED -->
+
+            <button type="submit" class="btn btn-primary">Encrypt File</button>
+        </form>
+    </div>
+
+    <script>
+        document.querySelector('input[name="stego_mode"]').addEventListener('change', function() {
+            const coverImageGroup = document.getElementById('cover-image-group');
+            if (this.checked) {
+                coverImageGroup.style.display = 'block';
+                document.getElementById('cover_image').required = true;
+            } else {
+                coverImageGroup.style.display = 'none';
+                document.getElementById('cover_image').required = false;
+            }
+        });
+    </script>
+{% endblock %}

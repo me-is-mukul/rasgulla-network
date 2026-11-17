@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+
+{% block content %}
+    <div class="form-container">
+        <h2>Decrypt File</h2>
+        <p><strong>File:</strong> {{ file.original_filename }}</p>
+        <p><strong>Size:</strong> {{ "%.2f"|format(file.file_size / 1024) }} KB</p>
+        <p><strong>Type:</strong> {{ file.file_type }}</p>
+        <p><strong>Date:</strong> {{ file.timestamp|localtime }}</p>
+
+        {% if file.unlock_time %}
+            <p><strong>Unlock Time:</strong> {{ file.unlock_time.strftime('%Y-%m-%d %H:%M') }}</p>
+        {% endif %}
+
+        <!-- OTP REMOVED (was here) -->
+
+        <div class="button-group">
+            <a href="{{ url_for('file.download_encrypted_file', file_id=file.id) }}" class="btn btn-secondary">Download Encrypted File</a>
+        </div>
+
+        <form method="POST" action="{{ url_for('file.decrypt_file_route', file_id=file.id) }}">
+            <div class="form-group">
+                <label for="password">Password</label>
+                <input type="password" id="password" name="password" required>
+            </div>
+
+            <!-- OTP input removed -->
+
+            <button type="submit" class="btn btn-primary">Decrypt and Download</button>
+        </form>
+    </div>
+{% endblock %}

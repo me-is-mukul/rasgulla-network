@@ -1,0 +1,154 @@
+{% extends "base.html" %}
+
+{% block content %}
+    <div class="vault-container">
+        <h2>TCP File Transfer</h2>
+        <p class="info-text">
+            Send encrypted files from your vault to another SafeCipher machine over raw TCP sockets.
+            Only ciphertext goes over the network, and both ends check it with SHA-256.
+        </p>
+
+        <!-- ===================== RECEIVER (SERVER) ===================== -->
+        <div class="form-container">
+            <h3>1. Receiver (TCP Server)</h3>
+            {% if receiver %}
+                <div class="alert alert-success">
+                    Listening on <strong>{{ local_ip }}:{{ receiver.port }}</strong>.
+                    Give this IP and port to the sender.
+                    {% if local_ips|length > 1 %}
+                        <br><small>Other IPs of this machine (try these if the first one doesn't work):
+                        {% for ip in local_ips if ip != local_ip %}<strong>{{ ip }}</strong>{% if not loop.last %}, {% endif %}{% endfor %}</small>
+                    {% endif %}
+                    <br><small>This page refreshes automatically, so incoming files show up below.</small>
+                </div>
+                <form method="POST" action="{{ url_for('transfer.stop_receiver') }}">
+                    <button type="submit" class="btn btn-danger">Stop Receiver</button>
+                </form>
+            {% else %}
+                <p>Receiver is <strong>stopped</strong>. This machine's IP: <strong>{{ local_ip }}</strong></p>
+                <form method="POST" action="{{ url_for('transfer.start_receiver') }}">
+                    <div class="form-group">
+                        <label for="recv_port">Listen Port</label>
+                        <input type="number" id="recv_port" name="port" value="{{ default_port }}" min="1024" max="65535" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Start Receiver</button>
+                </form>
+            {% endif %}
+        </div>
+
+        <!-- ===================== SENDER (CLIENT) ===================== -->
+        <div class="form-container">
+            <h3>2. Send File (TCP Client)</h3>
+            {% if files %}
+                <form method="POST" action="{{ url_for('transfer.send_vault_file') }}" id="send-form">
+                    <div class="form-group">
+                        <label for="file_id">Encrypted File from Vault</label>
+                        <select id="file_id" name="file_id" required>
+                            {% for f in files %}
+                                <option value="{{ f.id }}">
+                                    {{ f.original_filename }}{% if f.is_stego %} (stego){% endif %}
+                                    ({{ "%.2f"|format(f.file_size / 1024) }} KB)
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="host">Receiver IP / Host</label>
+                        <input type="text" id="host" name="host" placeholder="e.g. 192.168.1.20 or 127.0.0.1" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="send_port">Receiver Port</label>
+                        <input type="number" id="send_port" name="port" value="{{ default_port }}" min="1" max="65535" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary" id="send-btn">Send over TCP</button>
+                </form>
+            {% else %}
+                <p>Your vault is empty. <a href="{{ url_for('file.encrypt_file_route') }}">Encrypt a file</a> first.</p>
+            {% endif %}
+        </div>
+
+        <!-- ===================== RECEIVED FILES ===================== -->
+        <h3>3. Received Files</h3>
+        {% if received %}
+            <table class="vault-table">
+                <thead>
+                    <tr>
+                        <th>Original File</th>
+                        <th>From</th>
+                        <th>Size</th>
+                        <th>SHA-256</th>
+                        <th>Received</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for r in received %}
+                        <tr>
+                            <td>
+                                {{ r.meta.original_filename or r.filename }}
+                                {% if r.meta.is_stego %}<br><small>(stego PNG)</small>{% endif %}
+                                {% if r.meta.sent_by %}<br><small>sent by {{ r.meta.sent_by }}</small>{% endif %}
+                            </td>
+                            <td>{{ r.sender }}</td>
+                            <td>{{ "%.2f"|format(r.size / 1024) }} KB</td>
+                            <td title="{{ r.sha256 }}">
+                                {% if r.verified %}✅ Verified{% else %}❌ Mismatch{% endif %}
+                                <br><small>{{ r.sha256[:16] }}…</small>
+                            </td>
+                            <td>{{ r.received_at }}</td>
+                            <td>
+                                <a href="{{ url_for('transfer.download_received', stored_name=r.stored_name) }}" class="btn btn-sm btn-secondary">Download</a>
+                                {% if r.verified %}
+                                    <form method="POST" action="{{ url_for('transfer.import_received', stored_name=r.stored_name) }}" style="display: inline;">
+                                        <button type="submit" class="btn btn-sm btn-primary">
+                                            {% if r.imported_by %}Import Again{% else %}Import to Vault{% endif %}
+                                        </button>
+                                    </form>
+                                {% endif %}
+                                <form method="POST" action="{{ url_for('transfer.delete_received', stored_name=r.stored_name) }}" style="display: inline;">
+                                    <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Delete this received file?')">Delete</button>
+                                </form>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        {% else %}
+            <p>No files received yet.</p>
+        {% endif %}
+
+        <!-- ===================== ACTIVITY LOG ===================== -->
+        <h3>4. Socket Activity Log</h3>
+        <a href="{{ url_for('transfer.transfer_page') }}" class="btn btn-sm btn-secondary">Refresh</a>
+        {% if activity %}
+            <pre style="background:#111;color:#0f0;padding:12px;border-radius:6px;max-height:300px;overflow:auto;white-space:pre-wrap;">{% for line in activity %}{{ line }}
+{% endfor %}</pre>
+        {% else %}
+            <p>No socket activity yet.</p>
+        {% endif %}
+    </div>
+
+    <script>
+        // Show progress while the (blocking) TCP send runs, and prevent double-submits
+        var sendForm = document.getElementById('send-form');
+        var sending = false;
+        if (sendForm) {
+            sendForm.addEventListener('submit', function () {
+                sending = true;
+                var btn = document.getElementById('send-btn');
+                btn.disabled = true;
+                btn.textContent = 'Sending... (connecting to receiver)';
+            });
+        }
+
+        {% if receiver %}
+        // Receiver running: auto-refresh so incoming files appear,
+        // but never while the user is typing or a send is in progress
+        setInterval(function () {
+            var el = document.activeElement;
+            var typing = el && (el.tagName === 'INPUT' || el.tagName === 'SELECT');
+            if (!typing && !sending) { window.location.reload(); }
+        }, 5000);
+        {% endif %}
+    </script>
+{% endblock %}

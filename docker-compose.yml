@@ -1,0 +1,24 @@
+services:
+  safecipher:
+    build: .
+    container_name: safecipher
+    ports:
+      - "5000:5000"   # web app  -> http://localhost:5000
+      - "5001:5001"   # TCP file-transfer receiver
+    environment:
+      SECRET_KEY: ${SECRET_KEY:-change-this-secret-key}
+    volumes:
+      # Keep database and files when the container is rebuilt
+      - safecipher_instance:/app/instance
+      - safecipher_uploads:/app/uploads
+      - safecipher_encrypted:/app/encrypted_files
+      - safecipher_recycle:/app/recycle_bin
+      - safecipher_received:/app/received_files
+    restart: unless-stopped
+
+volumes:
+  safecipher_instance:
+  safecipher_uploads:
+  safecipher_encrypted:
+  safecipher_recycle:
+  safecipher_received:
